@@ -287,12 +287,17 @@ async function createTest() {
     
     // Vytvoření testu
     const testId = 'test_' + Date.now();
+    const githubRepo = localStorage.getItem('githubRepo');
+    const githubToken = localStorage.getItem('githubToken');
+    
     const test = {
         id: testId,
         name: testName,
         questions: questions,
         grading: grading,
-        created: new Date().toISOString()
+        created: new Date().toISOString(),
+        githubRepo: githubRepo,
+        githubToken: githubToken
     };
     
     // Uložení do localStorage (pro učitele)
@@ -360,7 +365,7 @@ function loadTestList() {
     });
 }
 
-function loadResults() {
+async function loadResults() {
     const testId = document.getElementById('testSelect').value;
     const resultsContainer = document.getElementById('resultsContainer');
     
@@ -369,15 +374,22 @@ function loadResults() {
         return;
     }
     
-    const results = JSON.parse(localStorage.getItem('results') || '{}');
-    const testResults = results[testId] || [];
+    resultsContainer.innerHTML = '<p>Načítání výsledků z GitHubu...</p>';
+    
+    // Načtení výsledků z GitHubu
+    const githubResults = await loadResultsFromGithub(testId);
+    
+    // Sloučení s lokálními výsledky
+    const localResults = JSON.parse(localStorage.getItem('results') || '{}');
+    const testResults = [...(localResults[testId] || []), ...githubResults];
     
     if (testResults.length === 0) {
-        resultsContainer.innerHTML = '<p>Zatím žádné výsledky.</p>';
+        resultsContainer.innerHTML = '<p>Zatím žádné výsledky. <button onclick="loadResults()" class="btn btn-secondary">Obnovit</button></p>';
         return;
     }
     
     let html = `
+        <button onclick="loadResults()" class="btn btn-secondary" style="margin-right: 10px;">🔄 Obnovit</button>
         <button onclick="exportToCSV('${testId}')" class="btn btn-primary export-btn">Exportovat do CSV</button>
         <table class="results-table">
             <thead>
@@ -411,6 +423,54 @@ function loadResults() {
     
     html += '</tbody></table>';
     resultsContainer.innerHTML = html;
+}
+
+async function loadResultsFromGithub(testId) {
+    const repo = localStorage.getItem('githubRepo');
+    const token = localStorage.getItem('githubToken');
+    
+    if (!repo || !token) {
+        return [];
+    }
+    
+    try {
+        // Načtení seznamu souborů ve složce results
+        const response = await fetch(`https://api.github.com/repos/${repo}/contents/results`, {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if (!response.ok) {
+            return [];
+        }
+        
+        const files = await response.json();
+        const results = [];
+        
+        // Načtení každého výsledku
+        for (const file of files) {
+            if (file.name.endsWith('.json')) {
+                try {
+                    const fileResponse = await fetch(file.download_url);
+                    const result = await fileResponse.json();
+                    
+                    // Filtrovat podle testId
+                    if (result.testId === testId) {
+                        results.push(result);
+                    }
+                } catch (e) {
+                    console.error('Error loading result:', e);
+                }
+            }
+        }
+        
+        return results;
+    } catch (error) {
+        console.error('Error loading results from GitHub:', error);
+        return [];
+    }
 }
 
 function exportToCSV(testId) {

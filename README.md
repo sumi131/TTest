@@ -10,10 +10,15 @@ Jednoduchá webová aplikace pro vytváření a vyplňování testů. **Načít�
 4. Vytvořte prázdnou složku `tests` (vytvořte soubor `tests/.gitkeep`)
 5. Jděte do Settings → Pages → Source: vyberte "main" branch → Save
 6. Vytvořte Personal Access Token:
-   - Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Generate new token → zaškrtněte "repo" → Generate
-   - Zkopírujte token (uložte si ho!)
-7. V aplikaci vyplňte GitHub nastavení (repository a token)
+   - V aplikaci klikněte na link "Klikněte zde pro vytvoření tokenu"
+   - Nebo jděte na: https://github.com/settings/tokens/new
+   - Zaškrtněte "repo"
+   - Klikněte "Generate token"
+   - **Zkopírujte token** (zobrazí se jen jednou!)
+7. V aplikaci vyplňte:
+   - Repository: `username/repository` (např. `jan/testovaci-system`)
+   - Token: vložte zkopírovaný token
+   - Klikněte "Uložit nastavení"
 8. Hotovo! Testy se budou nahrávat automaticky
 
 ## Jak používat
@@ -33,13 +38,15 @@ Jednoduchá webová aplikace pro vytváření a vyplňování testů. **Načít�
 2. Vyplní jméno, příjmení, třídu
 3. Odpovídá na otázky (každou zvlášť)
 4. Odešle test a vidí výsledky
-5. **Zkopíruje link s výsledky** a pošle učiteli (email, Teams, atd.)
+5. **Výsledky se automaticky odešlou učiteli na GitHub!**
+6. Může zavřít stránku
 
 ### Výsledky:
-1. Student pošle učiteli link s výsledky
-2. Učitel otevře link → výsledky se automaticky uloží
-3. Učitel → "Výsledky testů" → vidí všechny výsledky
-4. Může exportovat do CSV
+1. Učitel → "Výsledky testů"
+2. Vybere test
+3. Klikne "🔄 Obnovit" → načtou se nové výsledky z GitHubu
+4. Vidí všechny výsledky
+5. Může exportovat do CSV
 
 ## Formát Word dokumentu
 

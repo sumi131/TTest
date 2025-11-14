@@ -24,7 +24,11 @@
                 <label>GitHub nastavení (vyplňte jednou):</label>
                 <input type="text" id="githubRepo" placeholder="username/repository" value="">
                 <input type="password" id="githubToken" placeholder="GitHub Personal Access Token" value="">
-                <small>Token vytvořte na: Settings → Developer settings → Personal access tokens → Generate new token (classic) → zaškrtněte "repo"</small>
+                <small>
+                    <a href="https://github.com/settings/tokens/new?description=Testovaci-system&scopes=repo" target="_blank" style="color: #667eea; text-decoration: underline;">
+                        → Klikněte zde pro vytvoření tokenu
+                    </a> (zaškrtněte "repo" a klikněte "Generate token")
+                </small>
                 <button onclick="saveGithubSettings()" class="btn btn-secondary" style="margin-top: 10px;">Uložit nastavení</button>
             </div>
             

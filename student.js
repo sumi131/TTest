@@ -163,8 +163,10 @@ function calculateGrade(percentage) {
     return 5;
 }
 
-function saveResults(correctCount, percentage, grade) {
+async function saveResults(correctCount, percentage, grade) {
+    const resultId = 'result_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     const result = {
+        resultId: resultId,
         testName: testData.name,
         testId: testData.id,
         ...studentInfo,
@@ -176,25 +178,79 @@ function saveResults(correctCount, percentage, grade) {
         timestamp: new Date().toISOString()
     };
     
-    // Vytvoření linku pro odeslání učiteli
-    const resultEncoded = btoa(encodeURIComponent(JSON.stringify(result)));
-    const teacherLink = window.location.origin + window.location.pathname.replace('student.html', 'teacher.html') + '?result=' + resultEncoded;
+    // Zobrazení zprávy o odesílání
+    const sendDiv = document.createElement('div');
+    sendDiv.id = 'sendStatus';
+    sendDiv.style.marginTop = '30px';
+    sendDiv.style.padding = '20px';
+    sendDiv.style.background = '#fff3cd';
+    sendDiv.style.borderRadius = '8px';
+    sendDiv.innerHTML = `
+        <h3>📤 Odesílání výsledků...</h3>
+        <p>Prosím čekejte, výsledky se odesílají učiteli...</p>
+    `;
+    document.getElementById('resultsContainer').appendChild(sendDiv);
     
-    // Zobrazení linku pro zkopírování
-    setTimeout(() => {
-        const sendDiv = document.createElement('div');
-        sendDiv.style.marginTop = '30px';
-        sendDiv.style.padding = '20px';
-        sendDiv.style.background = '#fff3cd';
-        sendDiv.style.borderRadius = '8px';
+    // Pokus o automatické odeslání na GitHub
+    try {
+        const success = await uploadResultToGithub(resultId, result);
+        
+        if (success) {
+            sendDiv.style.background = '#d4edda';
+            sendDiv.innerHTML = `
+                <h3>✅ Výsledky úspěšně odeslány!</h3>
+                <p>Učitel uvidí vaše výsledky v prostředí učitele.</p>
+                <p><strong>Můžete zavřít tuto stránku.</strong></p>
+            `;
+        } else {
+            throw new Error('Nepodařilo se odeslat');
+        }
+    } catch (error) {
+        // Fallback - zobrazit link
+        const resultEncoded = btoa(encodeURIComponent(JSON.stringify(result)));
+        const teacherLink = window.location.origin + window.location.pathname.replace('student.html', 'teacher.html') + '?result=' + resultEncoded;
+        
+        sendDiv.style.background = '#f8d7da';
         sendDiv.innerHTML = `
-            <h3>📧 Odeslat výsledky učiteli</h3>
+            <h3>⚠️ Automatické odeslání se nezdařilo</h3>
             <p>Zkopírujte tento link a pošlete ho učiteli (email, Teams, atd.):</p>
             <input type="text" value="${teacherLink}" readonly style="width: 100%; padding: 10px; margin: 10px 0; font-size: 12px;">
             <button onclick="copyResultLink('${teacherLink}')" class="btn btn-primary">Kopírovat link</button>
         `;
-        document.getElementById('resultsContainer').appendChild(sendDiv);
-    }, 500);
+    }
+}
+
+async function uploadResultToGithub(resultId, result) {
+    // Získání GitHub info z testu
+    if (!testData.githubRepo || !testData.githubToken) {
+        return false;
+    }
+    
+    const repo = testData.githubRepo;
+    const token = testData.githubToken;
+    const fileName = `results/${resultId}.json`;
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(result, null, 2))));
+    
+    try {
+        const response = await fetch(`https://api.github.com/repos/${repo}/contents/${fileName}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Add result from ${result.firstName} ${result.lastName}`,
+                content: content,
+                branch: 'main'
+            })
+        });
+        
+        return response.ok;
+    } catch (error) {
+        console.error('GitHub upload error:', error);
+        return false;
+    }
 }
 
 function showResults(correctCount, percentage, grade) {
